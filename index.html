@@ -1,0 +1,642 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מענה אוטומטי | הורים חולון</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+  :root {
+    --cream: #f7f1e6;
+    --paper: #fffdf8;
+    --ink: #22252b;
+    --muted: #6b6f78;
+    --line: #e6dccb;
+    --blue: #2c5fa8;
+    --red: #d6453d;
+    --yellow: #f2b631;
+    --green: #2f8a5b;
+    --danger: #b3261e;
+    --radius: 14px;
+    --shadow: 0 1px 2px rgba(34,37,43,.06), 0 4px 16px rgba(34,37,43,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: "Heebo", system-ui, sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  button, input, textarea, select { font: inherit; color: inherit; }
+  a { color: var(--blue); }
+
+  .stripe { display: flex; height: 6px; }
+  .stripe span { flex: 1; }
+  .stripe span:nth-child(1) { background: var(--blue); }
+  .stripe span:nth-child(2) { background: var(--red); }
+  .stripe span:nth-child(3) { background: var(--yellow); }
+
+  header.top {
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+  }
+  .top-inner {
+    max-width: 1040px; margin: 0 auto; padding: 16px;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  }
+  .brand h1 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.2px; }
+  .brand p { margin: 0; color: var(--muted); font-size: 14px; }
+  .who { color: var(--muted); font-size: 14px; display: flex; gap: 12px; align-items: center; }
+
+  main { max-width: 1040px; margin: 0 auto; padding: 20px 16px 80px; }
+
+  .card {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+  }
+
+  .btn {
+    border: 1px solid var(--line); background: var(--paper);
+    padding: 9px 16px; border-radius: 999px; cursor: pointer; font-weight: 500;
+    display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  }
+  .btn:hover { border-color: #cdbfa6; }
+  .btn.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+  .btn.primary:hover { background: #000; }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+  .btn.danger { color: var(--danger); }
+  .btn:disabled { opacity: .5; cursor: default; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 18px; }
+  .tab {
+    border: 0; background: transparent; padding: 8px 14px; border-radius: 999px;
+    cursor: pointer; color: var(--muted); font-weight: 500;
+  }
+  .tab[aria-selected="true"] { background: var(--paper); color: var(--ink); box-shadow: var(--shadow); }
+
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+  .toolbar h2 { margin: 0; font-size: 18px; }
+
+  /* Login */
+  .login { max-width: 420px; margin: 60px auto; padding: 28px; }
+  .login h2 { margin: 0 0 6px; font-size: 22px; }
+  .login p { margin: 0 0 18px; color: var(--muted); }
+
+  label.field { display: block; margin-bottom: 16px; }
+  label.field > span { display: block; font-weight: 500; margin-bottom: 6px; }
+  label.field small, .hint { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+  input[type=text], input[type=email], input[type=url], textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px;
+    background: #fff; outline: none;
+  }
+  input:focus, textarea:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(44,95,168,.12); }
+  textarea { min-height: 96px; resize: vertical; }
+  input[dir=ltr] { text-align: left; }
+
+  /* Rules */
+  .rules { display: grid; gap: 12px; }
+  .rule { display: grid; grid-template-columns: 72px 1fr auto; gap: 14px; padding: 14px; align-items: center; }
+  .thumb {
+    width: 72px; height: 72px; border-radius: 10px; object-fit: cover; background: var(--cream);
+    display: grid; place-items: center; color: var(--muted); font-size: 12px; text-align: center; overflow: hidden;
+  }
+  .rule h3 { margin: 0 0 4px; font-size: 16px; }
+  .meta { color: var(--muted); font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .chip { background: var(--cream); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 13px; }
+  .chip button { border: 0; background: none; cursor: pointer; padding: 0 0 0 2px; color: var(--muted); }
+  .rule-actions { display: flex; gap: 6px; align-items: center; }
+  .rule.off { opacity: .6; }
+
+  .switch { position: relative; width: 44px; height: 26px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch span {
+    position: absolute; inset: 0; background: #d8cfbf; border-radius: 999px; cursor: pointer; transition: .15s;
+  }
+  .switch span::after {
+    content: ""; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; transition: .15s; box-shadow: 0 1px 2px rgba(0,0,0,.2);
+  }
+  .switch input:checked + span { background: var(--green); }
+  .switch input:checked + span::after { right: 21px; }
+
+  .empty { padding: 36px 20px; text-align: center; color: var(--muted); }
+
+  /* Editor */
+  dialog {
+    border: 0; padding: 0; width: min(760px, 100vw - 24px); max-height: calc(100vh - 24px);
+    border-radius: 18px; background: var(--paper); color: var(--ink);
+  }
+  dialog::backdrop { background: rgba(20,20,24,.45); }
+  .dlg-head { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: var(--paper); z-index: 2; }
+  .dlg-head h2 { margin: 0; font-size: 18px; }
+  .dlg-body { padding: 20px; }
+  .dlg-foot { display: flex; justify-content: space-between; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--line); position: sticky; bottom: 0; background: var(--paper); }
+
+  .section-title { font-weight: 700; margin: 6px 0 8px; }
+  .posts { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .post {
+    position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; cursor: pointer;
+    border: 2px solid transparent; background: var(--cream); padding: 0;
+  }
+  .post img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .post .badge { position: absolute; bottom: 4px; right: 4px; background: rgba(0,0,0,.6); color: #fff; font-size: 11px; padding: 1px 6px; border-radius: 6px; }
+  .post[aria-pressed="true"] { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(44,95,168,.2); }
+  .post.all { display: grid; place-items: center; font-weight: 700; font-size: 14px; color: var(--ink); text-align: center; padding: 6px; }
+
+  .kw-box { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border: 1px solid var(--line); border-radius: 10px; background: #fff; }
+  .kw-box input { border: 0; flex: 1; min-width: 120px; padding: 4px; box-shadow: none !important; }
+
+  .replies { display: grid; gap: 6px; }
+  .reply-row { display: flex; gap: 6px; }
+  .reply-row input { flex: 1; }
+
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #fff; }
+  .seg label { padding: 7px 14px; cursor: pointer; font-size: 14px; }
+  .seg input { display: none; }
+  .seg input:checked + span { font-weight: 700; color: var(--blue); }
+
+  .preview { background: var(--cream); border-radius: 12px; padding: 12px 14px; white-space: pre-wrap; font-size: 15px; border: 1px dashed var(--line); }
+
+  /* Log */
+  .log { display: grid; gap: 8px; }
+  .log-item { padding: 12px 14px; display: grid; gap: 4px; }
+  .log-top { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .status { font-size: 12px; padding: 1px 8px; border-radius: 999px; border: 1px solid; }
+  .status.sent { color: var(--green); border-color: #bfe0cd; background: #eef8f2; }
+  .status.failed { color: var(--danger); border-color: #f0c9c6; background: #fdf1f0; }
+  .status.other { color: var(--muted); border-color: var(--line); }
+  .err { color: var(--danger); font-size: 12px; direction: ltr; text-align: left; word-break: break-word; }
+
+  .toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 14px;
+    opacity: 0; pointer-events: none; transition: .2s; z-index: 50;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .rule { grid-template-columns: 56px 1fr; }
+    .thumb { width: 56px; height: 56px; }
+    .rule-actions { grid-column: 1 / -1; justify-content: flex-end; }
+    dialog { width: 100vw; max-width: 100vw; max-height: 100dvh; height: 100dvh; margin: 0; border-radius: 0; }
+  }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="stripe" aria-hidden="true"><span></span><span></span><span></span></div>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <h1>מענה אוטומטי לתגובות</h1>
+      <p id="account">הורים חולון באינסטגרם</p>
+    </div>
+    <div class="who" id="who" hidden>
+      <span id="whoEmail"></span>
+      <button class="btn ghost" id="logout">יציאה</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <!-- Login -->
+  <section id="loginView" class="card login" hidden>
+    <h2>כניסה</h2>
+    <p>נשלח אלייך קישור כניסה למייל. אין צורך בסיסמה.</p>
+    <form id="loginForm">
+      <label class="field"><span>מייל</span>
+        <input type="email" id="loginEmail" dir="ltr" required autocomplete="email" placeholder="name@example.com">
+      </label>
+      <button class="btn primary" type="submit" id="loginBtn">שליחת קישור כניסה</button>
+      <p class="hint" id="loginMsg" style="margin-top:12px"></p>
+    </form>
+  </section>
+
+  <!-- App -->
+  <section id="appView" hidden>
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="rules">כללים</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="log">יומן תגובות</button>
+    </div>
+
+    <div id="tab-rules">
+      <div class="toolbar">
+        <h2>הכללים שלך</h2>
+        <button class="btn primary" id="newRule">+ כלל חדש</button>
+      </div>
+      <div class="rules" id="rulesList"></div>
+    </div>
+
+    <div id="tab-log" hidden>
+      <div class="toolbar">
+        <h2>100 התגובות האחרונות שטופלו</h2>
+        <button class="btn" id="refreshLog">רענון</button>
+      </div>
+      <div class="log" id="logList"></div>
+    </div>
+  </section>
+</main>
+
+<!-- Rule editor -->
+<dialog id="editor">
+  <form id="ruleForm" method="dialog">
+    <div class="dlg-head">
+      <h2 id="editorTitle">כלל חדש</h2>
+      <button class="btn ghost" type="button" id="closeEditor" aria-label="סגירה">✕</button>
+    </div>
+    <div class="dlg-body">
+      <label class="field"><span>שם הכלל</span>
+        <input type="text" id="fName" maxlength="120" placeholder="למשל: רילס הקבוצה להורים" required>
+        <small>שם פנימי בשבילך, לא מוצג לאף אחד.</small>
+      </label>
+
+      <div class="field">
+        <div class="section-title">על איזה פוסט?</div>
+        <div class="posts" id="postsGrid"></div>
+        <div style="margin-top:8px"><button class="btn" type="button" id="morePosts" hidden>עוד פוסטים</button></div>
+      </div>
+
+      <div class="field">
+        <div class="section-title">מילות מפתח</div>
+        <div class="kw-box" id="kwBox">
+          <input type="text" id="kwInput" placeholder="מקלידים מילה ולוחצים Enter">
+        </div>
+        <span class="hint">הכלי מזהה גם שגיאת כתיב קטנה ואותיות שימוש (הקבוצה, לקבוצה). בלי מילים בכלל, כל תגובה תקבל מענה.</span>
+      </div>
+
+      <label class="field"><span>קישור</span>
+        <input type="url" id="fLink" dir="ltr" placeholder="https://bit.ly/...">
+      </label>
+
+      <label class="field"><span>ההודעה הפרטית</span>
+        <textarea id="fDm" maxlength="1000" required></textarea>
+        <small>במקום שבו יופיע הקישור כתבי <b>{link}</b>. אפשר לפנות בשם המשתמש עם <b>{username}</b>.
+          <button class="btn ghost" type="button" id="insLink" style="padding:2px 8px">הוספת {link}</button></small>
+      </label>
+      <div class="field">
+        <div class="section-title">כך ההודעה תיראה</div>
+        <div class="preview" id="dmPreview"></div>
+      </div>
+
+      <div class="field">
+        <div class="section-title">תגובות פומביות מתחת לתגובה</div>
+        <div class="replies" id="repliesList"></div>
+        <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap">
+          <button class="btn" type="button" id="addReply">+ נוסח נוסף</button>
+          <button class="btn ghost" type="button" id="defaultReplies">טעינת הנוסחים המאושרים</button>
+        </div>
+        <span class="hint">בכל פעם נבחר נוסח אחד באקראי. כדאי לפחות חמישה נוסחים, וכדאי לא להזכיר בהם את נושא הפוסט, כי התגובה גלויה לכולם.</span>
+      </div>
+
+      <div class="field">
+        <div class="section-title">למי לענות</div>
+        <div class="seg">
+          <label><input type="radio" name="since" value="post" checked><span>גם למי שכבר הגיב</span></label>
+          <label><input type="radio" name="since" value="now"><span>רק מעכשיו והלאה</span></label>
+        </div>
+        <span class="hint">מטא מאפשרת לשלוח הודעה פרטית עד שבעה ימים אחרי התגובה.</span>
+      </div>
+
+      <label class="field" style="display:flex; align-items:center; gap:10px">
+        <span class="switch"><input type="checkbox" id="fActive" checked><span></span></span>
+        <span style="margin:0">הכלל פעיל</span>
+      </label>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn danger" type="button" id="deleteRule" hidden>מחיקת הכלל</button>
+      <span style="flex:1"></span>
+      <button class="btn" type="button" id="cancelEditor">ביטול</button>
+      <button class="btn primary" type="submit" id="saveRule">שמירה</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const SUPABASE_URL = "https://tkhqqhnffygzgeqrmnne.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_mo6ZRJityAgIB9iGzUqcDA_vf51H4d9";
+const API = SUPABASE_URL + "/functions/v1/ig-admin";
+const DEFAULT_REPLIES = [
+  "שלחנו לך את כל הפרטים בהודעה פרטית 💛",
+  "איזה כיף שכתבת! הפרטים כבר אצלך בהודעות",
+  "נשלח 🙏 מחכים לך בהודעות",
+  "שלחנו לך הודעה. אם היא לא מופיעה, כדאי לבדוק בבקשות להודעות 💛",
+  "קיבלנו! הקישור כבר נשלח אליך בפרטי",
+  "כל כך שמחים שפנית 💛 שלחנו לך את הפרטים בהודעה",
+  "תודה שכתבת לנו. הכול כבר מחכה לך בהודעות 🙏",
+  "שלחנו לך בפרטי. אנחנו כאן אם יש שאלות 💛",
+];
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+let session = null;
+let rules = [];
+let media = [];
+let mediaAfter = null;
+let mediaLoaded = false;
+let editing = null; // { id?, media_id, keywords[], ... }
+
+function toast(msg) {
+  const t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600);
+}
+
+async function api(action, payload = {}) {
+  const { data } = await sb.auth.getSession();
+  const token = data.session?.access_token;
+  const res = await fetch(API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: "Bearer " + token, apikey: SUPABASE_ANON_KEY },
+    body: JSON.stringify({ action, ...payload }),
+  });
+  const j = await res.json().catch(() => ({}));
+  if (res.status === 401) { showLogin("המייל הזה לא מורשה להיכנס למערכת."); throw new Error("401"); }
+  if (!res.ok) throw new Error(j.detail || j.error || ("HTTP " + res.status));
+  return j;
+}
+
+function fmtDate(iso) {
+  if (!iso) return "";
+  return new Date(iso).toLocaleString("he-IL", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+/* ---------- Auth ---------- */
+function showLogin(msg) {
+  $("appView").hidden = true; $("who").hidden = true; $("loginView").hidden = false;
+  if (msg) $("loginMsg").textContent = msg;
+}
+async function showApp() {
+  $("loginView").hidden = true; $("appView").hidden = false; $("who").hidden = false;
+  $("whoEmail").textContent = session.user.email;
+  try {
+    const st = await api("status");
+    if (st.ig_username) $("account").innerHTML = "מחובר לחשבון <bdi dir=\"ltr\">@" + esc(st.ig_username) + "</bdi>" + (st.page_name ? " · " + esc(st.page_name) : "");
+  } catch (e) { if (e.message === "401") return; }
+  loadRules();
+}
+
+$("loginForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("loginEmail").value.trim();
+  $("loginBtn").disabled = true; $("loginMsg").textContent = "שולחת...";
+  const { error } = await sb.auth.signInWithOtp({
+    email, options: { emailRedirectTo: location.origin + location.pathname, shouldCreateUser: false },
+  });
+  $("loginBtn").disabled = false;
+  $("loginMsg").textContent = error
+    ? "לא הצלחתי לשלוח. ודאי שזה המייל המורשה ונסי שוב בעוד דקה."
+    : "נשלח! פתחי את המייל ולחצי על הקישור. אפשר לסגור את הלשונית הזו.";
+});
+$("logout").addEventListener("click", async () => { await sb.auth.signOut(); session = null; showLogin(""); });
+
+sb.auth.onAuthStateChange((_ev, s) => {
+  const was = !!session; session = s;
+  if (s && !was) showApp();
+  if (!s) showLogin("");
+});
+
+/* ---------- Tabs ---------- */
+document.querySelectorAll(".tab").forEach((b) => b.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach((x) => x.setAttribute("aria-selected", x === b));
+  $("tab-rules").hidden = b.dataset.tab !== "rules";
+  $("tab-log").hidden = b.dataset.tab !== "log";
+  if (b.dataset.tab === "log") loadLog();
+}));
+
+/* ---------- Media ---------- */
+async function loadMedia(more = false) {
+  if (mediaLoaded && !more) return;
+  const j = await api("media", more && mediaAfter ? { after: mediaAfter } : {});
+  media = more ? media.concat(j.items) : j.items;
+  mediaAfter = j.after; mediaLoaded = true;
+}
+function mediaById(id) { return media.find((m) => m.id === id); }
+function typeLabel(t) { return t === "reel" ? "רילס" : t === "carousel_album" ? "קרוסלה" : "פוסט"; }
+
+/* ---------- Rules list ---------- */
+async function loadRules() {
+  $("rulesList").innerHTML = '<div class="card empty">טוענת...</div>';
+  try {
+    const [r] = await Promise.all([api("rules"), loadMedia().catch(() => {})]);
+    rules = r.rules; renderRules();
+  } catch (e) {
+    if (e.message !== "401") $("rulesList").innerHTML = '<div class="card empty">משהו השתבש בטעינה. נסי לרענן את הדף.</div>';
+  }
+}
+function renderRules() {
+  const list = $("rulesList");
+  if (!rules.length) {
+    list.innerHTML = '<div class="card empty">עדיין אין כללים. לחצי על "כלל חדש" כדי ליצור את הראשון.</div>';
+    return;
+  }
+  list.innerHTML = "";
+  for (const r of rules) {
+    const m = r.media_id ? mediaById(r.media_id) : null;
+    const thumb = r.media_id
+      ? (m?.thumb ? `<img class="thumb" src="${esc(m.thumb)}" alt="" loading="lazy">` : `<div class="thumb">פוסט</div>`)
+      : `<div class="thumb">כל<br>הפוסטים</div>`;
+    const kws = (r.keywords || []).length
+      ? r.keywords.map((k) => `<span class="chip">${esc(k)}</span>`).join("")
+      : `<span class="chip">כל תגובה</span>`;
+    const el = document.createElement("div");
+    el.className = "card rule" + (r.active ? "" : " off");
+    el.innerHTML = `
+      ${thumb}
+      <div>
+        <h3>${esc(r.name)}</h3>
+        <div class="meta">
+          <span>${r.media_id ? (m ? typeLabel(m.type) + " מ־" + fmtDate(m.timestamp) : "פוסט מסוים") : "כל הפוסטים"}</span>
+          <span>נענו: ${r.stats.total}</span>
+          ${r.stats.failed ? `<span style="color:var(--danger)">הודעות שנכשלו: ${r.stats.failed}</span>` : ""}
+        </div>
+        <div class="chips">${kws}</div>
+      </div>
+      <div class="rule-actions">
+        <label class="switch" title="${r.active ? "פעיל" : "כבוי"}"><input type="checkbox" ${r.active ? "checked" : ""} aria-label="הפעלה"><span></span></label>
+        <button class="btn" data-edit>עריכה</button>
+      </div>`;
+    el.querySelector("input").addEventListener("change", async (ev) => {
+      try { await api("set_active", { id: r.id, active: ev.target.checked }); r.active = ev.target.checked; renderRules(); toast(r.active ? "הכלל הופעל" : "הכלל כובה"); }
+      catch { ev.target.checked = !ev.target.checked; toast("לא הצלחתי לשמור"); }
+    });
+    el.querySelector("[data-edit]").addEventListener("click", () => openEditor(r));
+    list.appendChild(el);
+  }
+}
+
+/* ---------- Editor ---------- */
+function renderPosts() {
+  const g = $("postsGrid"); g.innerHTML = "";
+  const all = document.createElement("button");
+  all.type = "button"; all.className = "post all"; all.textContent = "כל הפוסטים";
+  all.setAttribute("aria-pressed", editing.media_id ? "false" : "true");
+  all.onclick = () => { editing.media_id = null; renderPosts(); };
+  g.appendChild(all);
+  for (const m of media) {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "post"; b.title = (m.caption || "").slice(0, 80);
+    b.setAttribute("aria-pressed", editing.media_id === m.id ? "true" : "false");
+    b.innerHTML = (m.thumb ? `<img src="${esc(m.thumb)}" alt="" loading="lazy">` : "") +
+      `<span class="badge">${typeLabel(m.type)} · ${new Date(m.timestamp).toLocaleDateString("he-IL", { day: "numeric", month: "numeric" })}</span>`;
+    b.onclick = () => { editing.media_id = m.id; renderPosts(); };
+    g.appendChild(b);
+  }
+  $("morePosts").hidden = !mediaAfter;
+}
+$("morePosts").onclick = async () => { $("morePosts").disabled = true; try { await loadMedia(true); renderPosts(); } finally { $("morePosts").disabled = false; } };
+
+function renderKeywords() {
+  const box = $("kwBox");
+  box.querySelectorAll(".chip").forEach((c) => c.remove());
+  editing.keywords.forEach((k, i) => {
+    const c = document.createElement("span"); c.className = "chip";
+    c.innerHTML = `${esc(k)} <button type="button" aria-label="הסרה">✕</button>`;
+    c.querySelector("button").onclick = () => { editing.keywords.splice(i, 1); renderKeywords(); };
+    box.insertBefore(c, $("kwInput"));
+  });
+}
+function addKeywordsFrom(text) {
+  for (const k of text.split(/[,،\n]/).map((s) => s.trim()).filter(Boolean)) {
+    if (!editing.keywords.includes(k)) editing.keywords.push(k);
+  }
+  renderKeywords();
+}
+$("kwInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" || e.key === ",") { e.preventDefault(); addKeywordsFrom(e.target.value); e.target.value = ""; }
+  if (e.key === "Backspace" && !e.target.value && editing.keywords.length) { editing.keywords.pop(); renderKeywords(); }
+});
+$("kwInput").addEventListener("blur", (e) => { if (e.target.value.trim()) { addKeywordsFrom(e.target.value); e.target.value = ""; } });
+$("kwBox").addEventListener("click", () => $("kwInput").focus());
+
+function renderReplies() {
+  const list = $("repliesList"); list.innerHTML = "";
+  editing.public_replies.forEach((txt, i) => {
+    const row = document.createElement("div"); row.className = "reply-row";
+    row.innerHTML = `<input type="text" maxlength="300" value="${esc(txt)}"><button class="btn ghost" type="button" aria-label="הסרה">✕</button>`;
+    row.querySelector("input").oninput = (e) => { editing.public_replies[i] = e.target.value; };
+    row.querySelector("button").onclick = () => { editing.public_replies.splice(i, 1); renderReplies(); };
+    list.appendChild(row);
+  });
+  if (!editing.public_replies.length) list.innerHTML = '<span class="hint">אין תגובה פומבית. רק הודעה פרטית תישלח.</span>';
+}
+$("addReply").onclick = () => { editing.public_replies.push(""); renderReplies(); $("repliesList").querySelector("input:last-of-type")?.focus(); };
+$("defaultReplies").onclick = () => {
+  for (const r of DEFAULT_REPLIES) if (!editing.public_replies.includes(r)) editing.public_replies.push(r);
+  renderReplies();
+};
+
+function updatePreview() {
+  const link = $("fLink").value.trim() || "https://...";
+  $("dmPreview").textContent = ($("fDm").value || "").replace(/\{link\}/g, link).replace(/\{username\}/g, "@שם_משתמש") || "ההודעה תופיע כאן";
+}
+$("fDm").addEventListener("input", updatePreview);
+$("fLink").addEventListener("input", updatePreview);
+$("insLink").onclick = () => {
+  const t = $("fDm"); const p = t.selectionStart ?? t.value.length;
+  t.value = t.value.slice(0, p) + "{link}" + t.value.slice(p); t.focus(); updatePreview();
+};
+
+async function openEditor(rule) {
+  editing = rule
+    ? { ...rule, keywords: [...(rule.keywords || [])], public_replies: [...(rule.public_replies || [])] }
+    : { id: null, name: "", media_id: null, keywords: [], dm_text: "היי 💛 שמחנו שכתבת לנו.\nכאן כל הפרטים: {link}\nאם יש שאלות, אפשר לכתוב לנו כאן ונחזור אליך.", link_url: "", public_replies: [...DEFAULT_REPLIES], active: true };
+  $("editorTitle").textContent = rule ? "עריכת כלל" : "כלל חדש";
+  $("fName").value = editing.name || "";
+  $("fLink").value = editing.link_url || "";
+  $("fDm").value = editing.dm_text || "";
+  $("fActive").checked = editing.active !== false;
+  document.querySelector('input[name=since][value=' + (rule ? "now" : "post") + ']').checked = true;
+  document.querySelector('.seg').closest('.field').hidden = !!rule;
+  $("deleteRule").hidden = !rule;
+  $("kwInput").value = "";
+  renderKeywords(); renderReplies(); updatePreview();
+  $("postsGrid").innerHTML = '<span class="hint">טוענת פוסטים...</span>';
+  $("editor").showModal();
+  try { await loadMedia(); renderPosts(); } catch { $("postsGrid").innerHTML = '<span class="hint">לא הצלחתי לטעון את הפוסטים.</span>'; }
+}
+$("newRule").onclick = () => openEditor(null);
+$("closeEditor").onclick = $("cancelEditor").onclick = () => $("editor").close();
+
+$("ruleForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if ($("kwInput").value.trim()) { addKeywordsFrom($("kwInput").value); $("kwInput").value = ""; }
+  const dm = $("fDm").value.trim();
+  const link = $("fLink").value.trim();
+  if (link && !dm.includes("{link}")) { toast("שכחת לשים {link} בהודעה, כדי שהקישור יופיע"); return; }
+  const rule = {
+    id: editing.id || undefined,
+    name: $("fName").value.trim(),
+    media_id: editing.media_id,
+    keywords: editing.keywords,
+    dm_text: dm,
+    link_url: link,
+    public_replies: editing.public_replies.map((s) => s.trim()).filter(Boolean),
+    active: $("fActive").checked,
+  };
+  if (!editing.id) {
+    const since = document.querySelector("input[name=since]:checked").value;
+    const m = editing.media_id ? mediaById(editing.media_id) : null;
+    rule.starts_at = since === "post" && m ? m.timestamp : new Date().toISOString();
+    if (since === "post" && !m) rule.starts_at = new Date(Date.now() - 7 * 86400000).toISOString();
+  }
+  $("saveRule").disabled = true;
+  try { await api("save_rule", { rule }); $("editor").close(); toast("הכלל נשמר"); loadRules(); }
+  catch (err) { toast("לא הצלחתי לשמור: " + err.message); }
+  finally { $("saveRule").disabled = false; }
+});
+
+$("deleteRule").onclick = async () => {
+  if ($("deleteRule").dataset.confirm !== "1") {
+    $("deleteRule").dataset.confirm = "1"; $("deleteRule").textContent = "ללחוץ שוב למחיקה";
+    setTimeout(() => { $("deleteRule").dataset.confirm = ""; $("deleteRule").textContent = "מחיקת הכלל"; }, 3000);
+    return;
+  }
+  try { await api("delete_rule", { id: editing.id }); $("editor").close(); toast("הכלל נמחק"); loadRules(); }
+  catch { toast("לא הצלחתי למחוק"); }
+};
+
+/* ---------- Log ---------- */
+function statusChip(label, s) {
+  const cls = s === "sent" ? "sent" : s === "failed" ? "failed" : "other";
+  const word = s === "sent" ? "נשלחה" : s === "failed" ? "נכשלה" : s === "skipped" ? "אין" : "ממתינה";
+  return `<span class="status ${cls}">${label}: ${word}</span>`;
+}
+async function loadLog() {
+  $("logList").innerHTML = '<div class="card empty">טוענת...</div>';
+  try {
+    const { log } = await api("log");
+    if (!log.length) { $("logList").innerHTML = '<div class="card empty">עדיין לא טופלו תגובות.</div>'; return; }
+    const ruleName = (id) => rules.find((r) => r.id === id)?.name ?? "";
+    $("logList").innerHTML = log.map((l) => `
+      <div class="card log-item">
+        <div class="log-top">
+          <b>@${esc(l.username || "?")}</b>
+          <span class="meta">${esc(ruleName(l.rule_id))} · ${fmtDate(l.created_at)}</span>
+        </div>
+        <div>${esc(l.comment_text)}</div>
+        <div class="chips">${statusChip("הודעה פרטית", l.dm_status)} ${statusChip("תגובה פומבית", l.public_status)}</div>
+        ${l.dm_error ? `<div class="err">${esc(l.dm_error.slice(0, 220))}</div>` : ""}
+      </div>`).join("");
+  } catch (e) { if (e.message !== "401") $("logList").innerHTML = '<div class="card empty">משהו השתבש בטעינה.</div>'; }
+}
+$("refreshLog").onclick = loadLog;
+
+/* ---------- Start ---------- */
+(async () => {
+  const { data } = await sb.auth.getSession();
+  session = data.session;
+  if (session) showApp(); else showLogin("");
+})();
+</script>
+</body>
+</html>
