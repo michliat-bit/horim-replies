@@ -157,7 +157,8 @@
   .reply-row { display: flex; gap: 6px; }
   .reply-row input { flex: 1; }
 
-  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; background: #fff; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: #fff; }
+  .seg { flex-wrap: wrap; }
   .seg label { padding: 7px 14px; cursor: pointer; font-size: 14px; }
   .seg input { display: none; }
   .seg input:checked + span { font-weight: 700; color: var(--blue); }
@@ -258,6 +259,16 @@
       </label>
 
       <div class="field">
+        <div class="section-title">מתי לענות?</div>
+        <div class="seg" id="triggerSeg">
+          <label><input type="radio" name="trigger" value="comment" checked><span>תגובה על פוסט או רילס</span></label>
+          <label><input type="radio" name="trigger" value="story"><span>תשובה לסטורי</span></label>
+          <label><input type="radio" name="trigger" value="dm"><span>הודעה ישירה</span></label>
+        </div>
+        <span class="hint" id="triggerHint"></span>
+      </div>
+
+      <div class="field" id="postsField">
         <div class="section-title">על איזה פוסט?</div>
         <div class="posts" id="postsGrid"></div>
         <div style="margin-top:8px"><button class="btn" type="button" id="morePosts" hidden>עוד פוסטים</button></div>
@@ -285,7 +296,7 @@
         <div class="preview" id="dmPreview"></div>
       </div>
 
-      <div class="field">
+      <div class="field" id="repliesField">
         <div class="section-title">תגובות פומביות מתחת לתגובה</div>
         <div class="replies" id="repliesList"></div>
         <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap">
@@ -295,7 +306,7 @@
         <span class="hint">בכל פעם נבחר נוסח אחד באקראי. כדאי לפחות חמישה נוסחים, וכדאי לא להזכיר בהם את נושא הפוסט, כי התגובה גלויה לכולם.</span>
       </div>
 
-      <div class="field">
+      <div class="field" id="sinceField">
         <div class="section-title">למי לענות</div>
         <div class="seg">
           <label><input type="radio" name="since" value="post" checked><span>גם למי שכבר הגיב</span></label>
@@ -441,10 +452,18 @@ function renderRules() {
   }
   list.innerHTML = "";
   for (const r of rules) {
-    const m = r.media_id ? mediaById(r.media_id) : null;
-    const thumb = r.media_id
-      ? (m?.thumb ? `<img class="thumb" src="${esc(m.thumb)}" alt="" loading="lazy">` : `<div class="thumb">פוסט</div>`)
-      : `<div class="thumb">כל<br>הפוסטים</div>`;
+    const trig = r.trigger || "comment";
+    const isLatest = r.media_id === "latest_reel";
+    const m = r.media_id && !isLatest ? mediaById(r.media_id) : null;
+    const thumb = trig === "story" ? `<div class="thumb">סטורי</div>`
+      : trig === "dm" ? `<div class="thumb">הודעה<br>ישירה</div>`
+      : isLatest ? `<div class="thumb">הרילס<br>האחרון</div>`
+      : r.media_id
+        ? (m?.thumb ? `<img class="thumb" src="${esc(m.thumb)}" alt="" loading="lazy">` : `<div class="thumb">פוסט</div>`)
+        : `<div class="thumb">כל<br>הפוסטים</div>`;
+    const where = trig === "story" ? "תשובות לסטורי" : trig === "dm" ? "הודעות ישירות"
+      : isLatest ? "הרילס האחרון שלך, מתעדכן לבד"
+      : r.media_id ? (m ? typeLabel(m.type) + " מ־" + fmtDate(m.timestamp) : "פוסט מסוים") : "כל הפוסטים";
     const kws = (r.keywords || []).length
       ? r.keywords.map((k) => `<span class="chip">${esc(k)}</span>`).join("")
       : `<span class="chip">כל תגובה</span>`;
@@ -455,7 +474,7 @@ function renderRules() {
       <div>
         <h3>${esc(r.name)}</h3>
         <div class="meta">
-          <span>${r.media_id ? (m ? typeLabel(m.type) + " מ־" + fmtDate(m.timestamp) : "פוסט מסוים") : "כל הפוסטים"}</span>
+          <span>${where}</span>
           <span>נענו: ${r.stats.total}</span>
           ${r.stats.failed ? `<span style="color:var(--danger)">הודעות שנכשלו: ${r.stats.failed}</span>` : ""}
         </div>
@@ -482,6 +501,12 @@ function renderPosts() {
   all.setAttribute("aria-pressed", editing.media_id ? "false" : "true");
   all.onclick = () => { editing.media_id = null; renderPosts(); };
   g.appendChild(all);
+  const latest = document.createElement("button");
+  latest.type = "button"; latest.className = "post all"; latest.textContent = "הרילס האחרון שלי";
+  latest.title = "הכלל יעבור לבד לכל רילס חדש שתעלי";
+  latest.setAttribute("aria-pressed", editing.media_id === "latest_reel" ? "true" : "false");
+  latest.onclick = () => { editing.media_id = "latest_reel"; renderPosts(); };
+  g.appendChild(latest);
   for (const m of media) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "post"; b.title = (m.caption || "").slice(0, 80);
@@ -535,6 +560,21 @@ $("defaultReplies").onclick = () => {
   renderReplies();
 };
 
+const TRIGGER_HINT = {
+  comment: "",
+  story: "חל על כל הסטוריז. מי שעונה לסטורי עם המילה מקבל הודעה פרטית. בסטורי אין תגובה פומבית.",
+  dm: "מי ששולח לחשבון הודעה עם המילה מקבל את ההודעה הפרטית. חובה להגדיר מילות מפתח, וכל אדם יקבל את התשובה פעם אחת בלבד.",
+};
+function currentTrigger() { return document.querySelector("input[name=trigger]:checked")?.value || "comment"; }
+function applyTrigger() {
+  const t = currentTrigger();
+  $("postsField").hidden = t !== "comment";
+  $("repliesField").hidden = t !== "comment";
+  $("sinceField").hidden = t !== "comment" || !!editing?.id;
+  $("triggerHint").textContent = TRIGGER_HINT[t];
+}
+document.querySelectorAll("input[name=trigger]").forEach((r) => r.addEventListener("change", applyTrigger));
+
 function updatePreview() {
   const link = $("fLink").value.trim() || "https://...";
   $("dmPreview").textContent = ($("fDm").value || "").replace(/\{link\}/g, link).replace(/\{username\}/g, "@שם_משתמש") || "ההודעה תופיע כאן";
@@ -556,7 +596,8 @@ async function openEditor(rule) {
   $("fDm").value = editing.dm_text || "";
   $("fActive").checked = editing.active !== false;
   document.querySelector('input[name=since][value=' + (rule ? "now" : "post") + ']').checked = true;
-  document.querySelector('.seg').closest('.field').hidden = !!rule;
+  document.querySelector('input[name=trigger][value=' + (editing.trigger || "comment") + ']').checked = true;
+  applyTrigger();
   $("deleteRule").hidden = !rule;
   $("kwInput").value = "";
   renderKeywords(); renderReplies(); updatePreview();
@@ -582,12 +623,16 @@ $("ruleForm").addEventListener("submit", async (e) => {
     link_url: link,
     public_replies: editing.public_replies.map((s) => s.trim()).filter(Boolean),
     active: $("fActive").checked,
+    trigger: currentTrigger(),
   };
+  if (rule.trigger !== "comment") { rule.media_id = null; rule.public_replies = []; }
+  if (rule.trigger === "dm" && !rule.keywords.length) { toast("בכלל של הודעה ישירה חובה להגדיר מילת מפתח"); return; }
   if (!editing.id) {
     const since = document.querySelector("input[name=since]:checked").value;
     const m = editing.media_id ? mediaById(editing.media_id) : null;
     rule.starts_at = since === "post" && m ? m.timestamp : new Date().toISOString();
     if (since === "post" && !m) rule.starts_at = new Date(Date.now() - 7 * 86400000).toISOString();
+    if (rule.trigger !== "comment") rule.starts_at = new Date().toISOString();
   }
   $("saveRule").disabled = true;
   try { await api("save_rule", { rule }); $("editor").close(); toast("הכלל נשמר"); loadRules(); }
@@ -620,10 +665,10 @@ async function loadLog() {
     $("logList").innerHTML = log.map((l) => `
       <div class="card log-item">
         <div class="log-top">
-          <b>@${esc(l.username || "?")}</b>
+          <b>${l.username ? "@" + esc(l.username) : "משתמש באינסטגרם"}</b>
           <span class="meta">${esc(ruleName(l.rule_id))} · ${fmtDate(l.created_at)}</span>
         </div>
-        <div>${esc(l.comment_text)}</div>
+        <div>${l.kind === "story" ? '<span class="chip">סטורי</span> ' : l.kind === "dm" ? '<span class="chip">הודעה ישירה</span> ' : ""}${esc(l.comment_text)}</div>
         <div class="chips">${statusChip("הודעה פרטית", l.dm_status)} ${statusChip("תגובה פומבית", l.public_status)}</div>
         ${l.dm_error ? `<div class="err">${esc(l.dm_error.slice(0, 220))}</div>` : ""}
       </div>`).join("");
